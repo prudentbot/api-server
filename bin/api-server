@@ -1,0 +1,78 @@
+#!/usr/bin/env node
+
+var fs = require('fs');
+var http = require('http');
+var path = require('path');
+
+
+var express = require('express');
+
+var provided_location = ".";
+if(process.argv[2])
+  provided_location = process.argv[2];
+
+try{
+  var provided_location_stat = fs.lstatSync(provided_location);
+} catch (e){
+  return console.error(e);
+}
+
+if(!provided_location_stat.isDirectory())
+  return console.error("'" + provided_location + "' is not a directory.");
+
+try{
+  var config_data = fs.readFileSync(provided_location + '/config.json');
+}
+catch(e){
+  return console.error("no config.json found in specified directory '" + provided_location + "'");
+}
+
+try{
+  var config = JSON.parse(config_data);
+}
+catch(e){
+  return console.error("malformed config.json");
+}
+
+if(!config.routes)
+  return console.error("config.json has no field 'routes'");
+
+var app = express();
+
+for (var key in config.routes) {
+  if (config.routes.hasOwnProperty(key)) {
+    app.get(key, function(req, res){
+      res.sendFile(path.resolve(provided_location + config.routes[key]));
+    });
+  }
+}
+
+console.log("hosting on port 3000");
+
+var server = http.createServer(app);
+server.listen(3000);
+server.on('error', onError);
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
