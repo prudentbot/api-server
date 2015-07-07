@@ -9,7 +9,7 @@ npm install -g
 # Usage
 
 ```
-api-server directory
+api-server port directory
 ```
 
 directory must have a config.json

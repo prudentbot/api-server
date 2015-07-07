@@ -4,12 +4,18 @@ var fs = require('fs');
 var http = require('http');
 var path = require('path');
 
-
 var express = require('express');
 
+if(!process.argv[2])
+  return console.error("no port provided");
+
+var port = parseInt(process.argv[2]);
+if(!port)
+  return console.error("first argument must be port number");
+
 var provided_location = ".";
-if(process.argv[2])
-  provided_location = process.argv[2];
+if(process.argv[3])
+  provided_location = process.argv[3];
 
 try{
   var provided_location_stat = fs.lstatSync(provided_location);
@@ -42,15 +48,22 @@ var app = express();
 for (var key in config.routes) {
   if (config.routes.hasOwnProperty(key)) {
     app.get(key, function(req, res){
-      res.sendFile(path.resolve(provided_location + config.routes[key]));
+      var filepath = path.join(provided_location, config.routes[key]);
+      try{
+        var provided_location_stat = fs.lstatSync(path.resolve(filepath));
+      }
+      catch(e){
+        res.status(404).send(filepath + ': Not found');
+      }
+      res.sendFile(path.resolve(filepath));
     });
   }
 }
 
-console.log("hosting on port 3000");
+console.log("hosting on port " + port);
 
 var server = http.createServer(app);
-server.listen(3000);
+server.listen(port);
 server.on('error', onError);
 
 function onError(error) {
